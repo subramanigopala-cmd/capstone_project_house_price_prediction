@@ -1,0 +1,99 @@
+# tigerml/core/pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tigerml-core"
+dynamic = ["version"]
+description = "TigerML Core"
+license = "LicenseRef-Proprietary"
+readme = "README.md"
+
+requires-python = ">=3.10, <3.13"
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent"
+]
+
+dependencies = [
+	"numpy==1.26.4",
+	"pandas==2.1.4",
+	"scipy==1.11.4",
+	"scikit-learn==1.6.1",
+	"xgboost==2.1.4",
+	"pyjanitor==0.30.0",
+	"matplotlib==3.7.5",
+	"seaborn==0.13.2",
+	"category_encoders==2.8.0",
+	"fsspec==2024.6.1",
+	"pyarrow==15.0.2",
+	"openpyxl==3.1.2",
+	"lxml==5.2.2",
+	"selenium==4.27.1",
+	"webdriver_manager==4.0.2",
+	"datashader==0.17.0",
+	"panel==1.6.1",
+	"bokeh==3.6.3",
+	"holoviews==1.20.0",
+	"hvplot==0.11.2",
+	"ipython==8.37.0; python_version == '3.10'",
+	"ipython==9.0.2; python_version >= '3.11' and python_version < '3.13'",
+	"XlsxWriter==3.2.2",
+	"jinja2==3.1.6",
+	"python-slugify==8.0.4",
+	"great-expectations==0.18.22",
+	"invoke==1.7.3",
+	"param==2.2.1",
+	"ipykernel==6.29.5",
+	"jupyter-bokeh==4.0.5",
+	"evidently==0.7.10",
+]
+
+[project.urls]
+Homepage = "https://docs.tigeranalytics.com/tiger-accelerators/dsml-accelerators/TigerML/latest/"
+Repository = "https://git.tigeranalytics.com/tiger-accelerators/dsml-accelerators/TigerML"
+
+[tool.setuptools]
+package-dir = {"tigerml.core" = "."}
+packages = [
+    "tigerml.core",
+    "tigerml.core.common",
+    "tigerml.core.dataframe",
+    "tigerml.core.dataframe.backends",
+    "tigerml.core.plots",
+    "tigerml.core.preprocessing",
+    "tigerml.core.preprocessing.aggregators",
+    "tigerml.core.preprocessing.feature_engg",
+    "tigerml.core.preprocessing.feature_engg.tests",
+    "tigerml.core.preprocessing.feature_engg.xverse",
+    "tigerml.core.preprocessing.feature_engg.xverse.transformer",
+    "tigerml.core.preprocessing.feature_selection",
+    "tigerml.core.preprocessing.feature_selection.tests",
+    "tigerml.core.preprocessing.scripts",
+    "tigerml.core.preprocessing.transformers",
+    "tigerml.core.reports",
+    "tigerml.core.reports.contents",
+    "tigerml.core.reports.excel",
+    "tigerml.core.reports.excel.contents",
+    "tigerml.core.reports.html",
+    "tigerml.core.reports.html.contents",
+    "tigerml.core.reports.ppt",
+    "tigerml.core.reports.ppt.contents",
+    "tigerml.core.scoring",
+    "tigerml.core.simulate",
+    "tigerml.core.utils",
+]
+
+[tool.setuptools.dynamic.version]
+attr = "config.VERSION"
+
+[tool.setuptools.package-data]
+"tigerml.core.reports.html" = [
+	"report_resources/*.html",
+	"report_resources/*.js",
+	"report_resources/*.css",
+]

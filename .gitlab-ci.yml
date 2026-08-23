@@ -1,0 +1,42 @@
+include:
+  - local: '.ci/docs.yml'
+  - local: '.ci/test.yml'
+  - local: '.ci/deploy.yml'
+
+stages:
+  - test
+  - code-archive
+  - build-docs
+  - deploy-docs
+
+
+variables:
+  DOCS_BUILD_DIR: docs/build/html
+
+
+default:
+  before_script:
+    - echo "Updating Software Info"
+    - apt update -y && apt install -y curl
+
+    - echo "Installing Task Utility"
+    - sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b $HOME/.local/bin
+    - export PATH=$PATH:$HOME/.local/bin
+    - task --version
+
+    - echo "Installing UV"
+    - curl -Ls https://astral.sh/uv/install.sh | sh
+    - uv --version
+
+    - echo "Installing DIRENV"
+    - apt install -y direnv
+    - echo 'eval "$(direnv hook bash)"' >> $HOME/.bashrc
+    - direnv --version
+    - direnv status
+
+    - echo "Creating Python Environment"
+    - task dev.setup-env formatting=true testing=true docs=true build=true
+    - source ta-lib-dev/bin/activate
+    - task dev.info
+
+

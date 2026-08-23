@@ -1,0 +1,6 @@
+channels:
+- conda-forge
+dependencies:
+- pip:
+  - luminol @ git+https://github.com/linkedin/luminol
+  - ruptures==1.1.9

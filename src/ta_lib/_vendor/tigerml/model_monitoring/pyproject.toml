@@ -1,0 +1,45 @@
+# tigerml/model_monitoring/pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tigerml-model_monitoring"
+dynamic = ["version"]
+description = "TigerML Model Monitoring"
+license = "LicenseRef-Proprietary"
+readme = "README.md"
+
+requires-python = ">=3.10, <3.13"
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent"
+]
+
+dependencies = [
+	"tigerml.core==0.5.0",
+	"evidently==0.7.10",
+    "sqlalchemy==2.0.41"
+]
+
+[project.urls]
+Homepage = "https://docs.tigeranalytics.com/tiger-accelerators/dsml-accelerators/TigerML/latest/"
+Repository = "https://git.tigeranalytics.com/tiger-accelerators/dsml-accelerators/TigerML"
+
+[tool.setuptools]
+package-dir = {"tigerml.model_monitoring" = "."}
+packages = [
+    "tigerml.model_monitoring",
+    "tigerml.model_monitoring.config",
+    "tigerml.model_monitoring.core",
+    "tigerml.model_monitoring.plotters",
+    "tigerml.model_monitoring.utils",
+    "tigerml.model_monitoring.utils",
+    "tigerml.model_monitoring.utils.dao"
+]
+
+[tool.setuptools.dynamic.version]
+attr = "config.VERSION"

@@ -1,0 +1,105 @@
+code-archive:
+  stage: code-archive
+  variables:
+    BUILD_TAG: "${CI_COMMIT_REF_NAME}"
+  image: python:3.12-slim
+  script:
+    - apt-get update -y
+    - apt-get install -y curl tar git
+
+    # Checkout the correct branch
+    - git fetch origin $BUILD_TAG
+    - git checkout $BUILD_TAG
+
+    # Combine GitHub token from predefined variables
+    - export GITLAB_OAUTH_TOKEN="$ct_archive"
+
+    # Install Python dependencies with pip
+    - pip install --no-cache-dir pyyaml jinja2==3.1.6 invoke==2.2.0
+
+    # Define template list (adjust as needed)
+    - TEMPLATES=("classification-py" "regression-py" "classification-pyspark" "regression-pyspark")
+
+    # Loop through templates and build archives
+    - for TEMPLATE_NAME in "${TEMPLATES[@]}"; do
+        echo "Creating archive for $TEMPLATE_NAME";
+        cd scripts/code_archive;
+        inv dev.create-archive -t $TEMPLATE_NAME --force --ctbranch=$BUILD_TAG;
+        cd ../..;
+      done
+
+    - cp -r scripts/code_archive/code-archives .
+
+  artifacts:
+    name: "artifacts"
+    paths:
+      - code-archives/
+    expire_in: 1 hour
+  rules:
+    # Only run if docs changed or push/MR to main/dev
+    # - changes:
+    #     - docs/**
+
+    # Rule 1: Merge request to main or dev
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev")'
+      when: always
+
+    # # Rule 2: Push to dev
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev")'
+      when: always
+
+    # - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH != "master" || $CI_COMMIT_BRANCH != "dev")'
+    #   when: always
+
+    - when: never
+
+# publish-release:
+#   stage: release
+#   image: registry.gitlab.com/gitlab-org/release-cli:latest
+#   before_script: []
+#   needs:
+#      - job: code-archive
+#        artifacts: true
+#   script:
+#     - ls -lh
+#   artifacts:
+#     paths:
+#       - classification-py.tgz
+#       - regression-py.tgz
+#       - classification-pyspark.tgz
+#       - regression-pyspark.tgz
+#     expire_in: 1 week
+#   release:
+#     tag_name: "v0.5"
+#     name: "Release ${RELEASE_TAG}"
+#     description: "Automated release from pipeline"
+#     assets:
+#       links:
+#         - name: "classification-py.tgz"
+#           url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/classification-py.tgz"
+#         - name: "regression-py.tgz"
+#           url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/regression-py.tgz"
+#         - name: "classification-pyspark.tgz"
+#           url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/classification-pyspark.tgz"
+#         - name: "regression-pyspark.tgz"
+#           url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/regression-pyspark.tgz"
+
+#   rules:
+#     # Only run if docs changed or push/MR to main/dev
+#     # - changes:
+#     #     - docs/**
+#     - if: '$CI_COMMIT_TAG == "v0.5"'
+#       when: always
+
+#     # Rule 1: Merge request to main or dev
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev")'
+#       when: always
+
+#     # # Rule 2: Push to dev
+#     - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "enh/ci-pipeline-gitlab")'
+#       when: always
+
+#     # - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH != "master" || $CI_COMMIT_BRANCH != "dev")'
+#     #   when: always
+
+#     - when: never

@@ -1,0 +1,38 @@
+# tigerml/pyspark/model_eval/pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tigerml-pyspark-model_eval"
+dynamic = ["version"]
+description = "TigerML Pyspark Model Evaluation"
+license = "LicenseRef-Proprietary"
+readme = "README.md"
+
+requires-python = ">=3.10, <3.13"
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent"
+]
+
+dependencies = [
+    "tigerml.pyspark.core==0.5.0",
+    "shap==0.45.1",
+]
+
+[project.urls]
+Homepage = "https://docs.tigeranalytics.com/tiger-accelerators/dsml-accelerators/TigerML/latest/"
+Repository = "https://git.tigeranalytics.com/tiger-accelerators/dsml-accelerators/TigerML"
+
+[tool.setuptools]
+package-dir = {"tigerml.pyspark.model_eval" = "."}
+packages = [
+    "tigerml.pyspark.model_eval",
+]
+
+[tool.setuptools.dynamic.version]
+attr = "config.VERSION"

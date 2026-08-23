@@ -1,0 +1,13 @@
+channels:
+- conda-forge
+dependencies:
+- six==1.17.0
+- arviz==0.21.0
+- mlflow==3.1.1
+- pip:
+  - tensorflow==2.19.0
+  - tensorflow-probability==0.25.0
+  - protobuf==5.29.5
+  - bambi==0.15.0
+  - jupyter-dash==0.4.2
+  - nbformat==5.10.4

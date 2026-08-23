@@ -1,0 +1,13 @@
+channels:
+- conda-forge
+dependencies:
+- pytest==8.3.5
+- more-itertools==10.7.0
+- pluggy==1.6.0
+- py==1.11.0
+- toml==0.10.2
+- hypothesis==6.135.20
+- sortedcontainers==2.4.0
+- iniconfig==2.1.0
+- safety==3.5.2
+- wget==3.2

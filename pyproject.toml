@@ -1,0 +1,288 @@
+[project]
+name = "ta_lib"
+version = "1.2.0"
+description = "An end-to-end accelerator to support data science projects with Python."
+authors = [
+    {name = "Code Template Team", email = "code-templates@tigeranalytics.com"}
+]
+license = "LicenseRef-Proprietary"
+readme = "README.md"
+requires-python = ">=3.10, <3.13"
+dependencies = [
+	"numpy==1.26.4",
+  "pandas==2.1.4",
+  "scipy==1.11.4",
+  "scikit-learn==1.6.1",
+  "statsmodels==0.14.2",
+  "xgboost==2.1.4",
+  "pyjanitor==0.30.0",
+  "shap==0.45.1",
+  "matplotlib==3.7.5",
+  "seaborn==0.13.2",
+  "category_encoders==2.8.0",
+  "fsspec==2024.6.1",
+  "pyarrow==15.0.2",
+  "openpyxl==3.1.2",
+  "lxml==5.2.2",
+  "selenium==4.27.1",
+  "webdriver_manager==4.0.2",
+  "datashader==0.17.0",
+  "panel==1.6.1",
+  "bokeh==3.6.3",
+  "holoviews==1.20.0",
+  "hvplot==0.11.2",
+  "ipython==9.0.2; python_version >= '3.11' and python_version < '3.13'",
+  "ipython==8.37.0; python_version == '3.10'",
+  "XlsxWriter==3.2.2",
+  "jinja2==3.1.6",
+  "python-slugify==8.0.4",
+  "great-expectations==0.18.22",
+  "invoke==2.2.0",
+  "param==2.2.1",
+  "ipykernel==6.29.5",
+  "jupyter-bokeh==4.0.5",
+  "deap==1.4.3",
+  "tpot==0.12.2",
+  "evidently==0.7.10",
+  "pydrive==1.3.1",
+]
+
+[project.optional-dependencies]
+ct_ebo_dev = [
+  "deap==1.4.3",
+  "tpot==0.12.2",
+  "joblib==1.5.1",
+  "tweepy==4.16.0",
+  "searchtweets==1.7.6",
+  "pytrends==4.9.2",
+  "dtw-python==1.5.3",
+  "tslearn==0.6.3",
+  "bertopic==0.17.0",
+  "contractions==0.1.73",
+  "datasketch==1.6.5",
+  "dotmap==1.3.30",
+  "emoji==2.14.1",
+  "fuzzywuzzy==0.18.0",
+  "gensim==4.3.3",
+  "hdbscan==0.8.40",
+  "keybert==0.9.0",
+  "kneed==0.8.5",
+  "networkx==3.5; python_version >= '3.11' and python_version < '3.13'",
+  "networkx==3.4.2; python_version == '3.10'",
+  "nltk==3.9.1",
+  "plotly==5.24.1",
+  "punctuator==0.9.6",
+  "pyLDAvis==3.4.1",
+  "pyspellchecker==0.8.3",
+  "scikit-multilearn==0.2.0",
+  "sentence-transformers==5.0.0",
+  "spacy==3.8.7",
+  "tensorflow==2.19.0",
+  "tensorflow-hub==0.16.1",
+  "transformers==4.53.0",
+  "umap==0.1.1",
+  "umap-learn==0.5.8",
+  "wordcloud==1.9.4",
+  "mxtheme==0.3.17",
+  "holidays==0.75",
+  "fabric==3.2.2",
+  "gluonts==0.16.2",
+  "prophet==1.1.7",
+  "patchwork==1.0.1" # Note: patchwork requires invoke version less than 2.0.0 and fabric version 2.7.3
+]
+
+ct_mmx_dev = [
+  "arviz==0.21.0",
+  "numpy==1.26.4",
+  "protobuf==5.29.5",
+  "bambi==0.15.0",
+  "jupyter-dash==0.4.2",
+  "nbformat==5.10.4",
+]
+
+ct_pyspark_dev = [
+  "pyspark==3.5.6",
+  "pyspark_dist_explore==0.1.8",
+  "py4j==0.10.9.7",
+  "cytoolz==1.0.1",
+  "jupyterlab==4.3.6",
+  "notebook==7.3.3",
+  "findspark==2.0.1",
+]
+
+ct_reco_dev = [
+  "surprise==0.1",
+  "implicit==0.7.2",
+  "torch==2.7.1",
+  "torch-geometric==2.6.1",
+  "plotly==5.24.1",
+]
+
+ct_rtm_dev = [
+  "kmodes==0.12.2",
+]
+
+ct_tpo_dev = [
+  "six==1.17.0",
+  "mlflow==3.1.1",
+  "arviz==0.21.0",
+  "pyomo==6.9.2",
+  "xmltodict==0.14.2",
+  "tensorflow==2.19.0",
+  "tensorflow-probability==0.25.0",
+  "protobuf==5.29.5",
+]
+
+addon_bayesian_dev = [
+  "mlflow==3.1.1",
+  "openpyxl==3.1.2",
+  "six==1.17.0",
+  "arviz==0.21.0",
+  "tensorflow==2.19.0",
+  "tensorflow-probability==0.25.0",
+  "protobuf==5.29.5",
+]
+
+addon_extras = [
+  "tpot==0.12.2",
+  "deap==1.4.3",
+  "stopit==1.1.2",
+  "tqdm==4.67.1",
+  "safety==3.5.2",
+  "dparse==0.6.4",
+  "toml==0.10.2",
+  "mlxtend==0.23.4",
+  "eli5==0.16.0",
+  "tabulate==0.9.0",
+  "mlflow==3.1.1",
+  "graphviz==0.21",
+  "update-checker==0.18.0",
+  "pydrive==1.3.1",
+]
+
+addon_jupyter = [
+  "jupyterlab==4.4.4",
+  "json5==0.12.0",
+  "nodejs==0.1.1",
+  "pyviz_comms==3.0.6",
+]
+
+addon_tareg_dev = [
+  "numpy==1.26.4",
+  "bambi==0.15.0",
+  "formulae==0.5.4",
+  "tabulate==0.9.0",
+  "nlopt==2.7.1",
+  "numpyro==0.18.0",
+  "tensorflow==2.19.0",
+  "tensorflow-probability==0.25.0",
+  "jax==0.6.1",
+  "jaxlib==0.6.1",
+  "tf-keras==2.19.0",
+  "glmnet" # Note: glmnet is not available on PyPI, it needs to be installed from source or another method
+]
+
+addon_ts_dev = [
+  "luminol @ git+https://github.com/linkedin/luminol",
+  "ruptures==1.1.9",
+]
+
+[dependency-groups]
+
+addon_documentation = [
+  "sphinx==8.1.3; python_version == '3.10'",
+	"sphinx==8.2.3; python_version >= '3.11' and python_version < '3.13'",
+  "sphinxcontrib-napoleon==0.7",
+  "nbsphinx==0.9.6",
+  "jupyter-sphinx==0.5.3",
+  "sphinx-rtd-theme==3.0.2",
+  "jupyter-core==5.8.1",
+]
+
+addon_code_format = [
+  "bandit==1.8.5",
+  "flake8==7.3.0",
+  "flake8-black==0.3.6",
+  "flake8-docstrings==1.7.0",
+  "flake8-isort==6.1.2",
+  "isort==6.0.1",
+  "flake8-bandit==4.1.1",
+  "black==25.1.0",
+  "Flake8-pyproject==1.2.3"
+]
+
+addon_testing = [
+  "pytest==8.3.5",
+  "more-itertools==10.7.0",
+  "pluggy==1.6.0",
+  "py==1.11.0",
+  "toml==0.10.2",
+  "hypothesis==6.135.20",
+  "sortedcontainers==2.4.0",
+  "iniconfig==2.1.0",
+  "safety==3.5.2",
+  "wget==3.2",
+]
+
+pkg_build = [
+	"build",
+	"setuptools-scm==8.3.1",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"tests.core.test_conf" = [
+    "test.yml",
+]
+"tests.ebo.test_conf" = [
+    "test.yml",
+]
+"tests.ebo.test_data.ebo" = [
+    "*.csv"
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.flake8]
+max-line-length = 88
+max-complexity = 12
+ignore = [
+  "E501", "D104", "D103", "D100", "D202", "W503", "E203", "D107"
+]
+exclude = [
+  ".bandit",
+  ".git",
+  "api.py",
+  ".ipynb_checkpoints",
+  "ta_lib/__init__.py",
+  "ta_lib/_version.py",
+  "setup.py",
+  "scripts",
+  "_ext_lib.py"
+]
+per-file-ignores = [
+  "tests/*.py: S101",
+  "src/ta_lib/core/utils.py: E712",
+  "src/ta_lib/core/tracking.py: BLK100",
+  "src/ta_lib/pyspark/*.py: BLK100,F401",
+  "src/ta_lib/ebo/dtw_forcasting.py: C901",
+  "src/ta_lib/ebo/trends_identification/ti_clean_polygram_phrases.py: C901",
+  "src/ta_lib/ebo/trends_identification/ti_keyword_extraction.py: C901,I003",
+  "src/ta_lib/ebo/trends_identification/__init__.py: F401",
+  "src/ta_lib/pyspark/core/*.py: BLK100",
+  "src/ta_lib/mmx/*/__init__.py: F401",
+  "src/ta_lib/regression/estimators.py: F401",
+  "src/ta_lib/classification/estimators.py: F401"
+]
