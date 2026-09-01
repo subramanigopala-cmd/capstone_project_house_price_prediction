@@ -148,11 +148,28 @@ def execute_job_plan(
 def main(
     context, job_planner, job_spec, init_fn=None, n_workers=1, n_threads_per_worker=-1
 ):
-    job_plan = job_planner(context, job_spec)
-    execute_job_plan(
-        context,
-        job_plan,
-        init_fn=init_fn,
-        n_workers=n_workers,
-        n_threads_per_worker=n_threads_per_worker,
-    )
+    if is_tracker_supported(context):
+        from ta_lib.core.tracking import start_experiment
+
+        expt_name = job_spec["name"]
+        with start_experiment(context, expt_name, run_name=expt_name) as mlflow:
+            job_spec["__tracker_run_id"] = mlflow.active_run().info.run_id
+            job_spec["__tracker_experiment_name"] = expt_name
+
+            job_plan = job_planner(context, job_spec)
+            execute_job_plan(
+                context,
+                job_plan,
+                init_fn=init_fn,
+                n_workers=n_workers,
+                n_threads_per_worker=n_threads_per_worker,
+            )
+    else:
+        job_plan = job_planner(context, job_spec)
+        execute_job_plan(
+            context,
+            job_plan,
+            init_fn=init_fn,
+            n_workers=n_workers,
+            n_threads_per_worker=n_threads_per_worker,
+        )

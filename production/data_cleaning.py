@@ -41,9 +41,21 @@ def clean_product_table(context, params):
         )
         .replace({"": np.NaN})
         # drop unnecessary cols : nothing to do here
-        .coalesce(["color", "Ext_Color"], "color", delete_columns=True)
+        #.coalesce(["color", "Ext_Color"], "color", delete_columns=True)
+        .coalesce(
+            "color",
+            "Ext_Color",
+            target_column_name="color",
+        )
+        .remove_columns(["Ext_Color"])
         # drop unnecessary cols : nothing to do here
-        .coalesce(["MemorySize", "Ext_memorySize"], "memory_size", delete_columns=True)
+        #.coalesce(["MemorySize", "Ext_memorySize"], "memory_size", delete_columns=True)
+        .coalesce(
+            "MemorySize",
+            "Ext_memorySize",
+            target_column_name="memory_size",
+        )
+        .remove_columns(["MemorySize", "Ext_memorySize"])
         # ensure that the key column does not have duplicate records
         .remove_duplicate_rows(col_names=["SKU"], keep_first=True)
         # clean column names (comment out this line while cleaning data above)
