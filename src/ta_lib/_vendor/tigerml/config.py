@@ -1,0 +1,14 @@
+PROD = "production"
+DEV = "development"
+BETA = "beta"
+
+
+TRACKING = False
+ENVIRONMENT = DEV
+MAJOR_VERSION = 0
+MINOR_VERSION = 5
+MICRO_VERSION = 0
+
+VERSION = "{}.{}.{}".format(MAJOR_VERSION, MINOR_VERSION, MICRO_VERSION)
+
+__version__ = VERSION

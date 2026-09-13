@@ -1,0 +1,44 @@
+jobs:
+  - name: data-cleaning
+    stages:
+      - name: "clean-housing"
+        tasks:
+          - name: "housing"
+            params: {}
+
+      - name: "train-test-split"
+        tasks:
+          - name: "train-test"
+            params:
+              target: median_house_value
+              test_size: 0.2
+
+  - name: feat-engg
+    stages:
+      - name: "feature-pipelines"
+        tasks:
+          - name: "transform-features"
+            params:
+              sampling_fraction: 1.0
+
+  - name: model-gen
+    stages:
+      - name: "model-creation"
+        tasks:
+          - name: "train-model"
+            params:
+              sampling_fraction: 1.0
+              p:
+                max_depth: 20
+                max_features: 0.5
+                min_samples_leaf: 2
+                n_estimators: 215
+                n_jobs: -1
+                random_state: 0
+
+  - name: model-eval
+    stages:
+      - name: "model-predict"
+        tasks:
+          - name: "score-model"
+            params: {}

@@ -1,0 +1,1157 @@
+# Task Utility for TigerML
+# Read more on Task: https://taskfile.dev
+
+
+version: '3' # minimum task version required
+
+vars:
+  GREETING: Welcome to Code-Templates!
+  PACKAGE_NAME: tigerml
+  ENV_PREFIX: ta-lib
+  ENV_PREFIX_PYSPARK: ta-lib-pyspark
+  TEST_BASE_PATH: "tests"
+  PACKAGE_LIST:
+    - housing
+    # - ebo
+
+tasks:
+  # ----------------------------- Default Task ----------------------------- #
+  hello:
+    desc: Greetings!
+    silent: true
+    vars:
+      HELP_TEXT: |-
+
+        Usage:
+          task hello
+
+        Description:
+          Performs health checks for the taskfile.
+
+        Example:
+          task hello
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            echo "{{.GREETING}}"
+          fi
+
+  # ----------------------------- Requirements Check ----------------------------- #
+  debug.check-reqs:
+    desc: Check for basic requirements
+    silent: true
+    vars:
+      HELP_TEXT: |-
+
+        Usage:
+          task debug.check-reqs
+
+        Description:
+          Checks for availability of basic development tools.
+
+        Example:
+          task debug.check-reqs
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            # main logic
+            if git --version &> /dev/null; then
+              echo "git is installed."
+            else
+              echo "git is NOT installed."
+            fi
+
+            if direnv --version &> /dev/null; then
+              echo "direnv is installed."
+            else
+              echo "direnv is NOT installed."
+            fi
+
+            if uv --version &> /dev/null; then
+              echo "uv is installed."
+            else
+              echo "uv is NOT installed."
+            fi
+          fi
+        platforms: [linux, darwin, windows]
+
+  # ----------------------------- Manage Environments ----------------------------- #
+  dev.info:
+    desc: Retrieve System Information
+    silent: true
+    vars:
+      HELP_TEXT: |-
+
+        Usage:
+          task dev.info
+
+        Description:
+          Collects and shows basic info about the development platform.
+
+        Example:
+          task dev.info
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            # main logic
+            echo "--- System Information ---"
+            echo "Operating System: $(grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '"')"
+            echo "Architecture: $(uname -m)"
+            echo "Platform: $(uname -s)"
+            echo "CPU Count: $(nproc)"
+            echo "Available memory: $(grep MemAvailable /proc/meminfo | awk '{print $2 " kB"}')"
+            echo "Current Working Directory: $(pwd)"
+            echo "Git branch: $(git branch --show-current)"
+            echo "Python version: $(python --version)"
+            echo "Python interpreter path: $(which python)"
+            echo "-----------------------------"
+          fi
+        platforms: [linux, darwin]
+
+      - cmd: >
+          powershell -NoProfile -Command "
+            if ('{{.help}}' -eq 'true') {
+              Write-Host '{{.HELP_TEXT}}'
+              exit 0
+            } else {
+              # main logic
+              Write-Host '--- System Information ---'
+              Write-Host ('Operating System: ' + (Get-CimInstance Win32_OperatingSystem).Caption)
+              Write-Host ('Architecture: ' + (Get-CimInstance Win32_Processor).Architecture)
+              Write-Host 'Platform: Windows'
+              Write-Host ('CPU Count: ' + (Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors)
+              Write-Host ('Available Memory: ' + (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory + ' kB')
+              Write-Host ('Current Working Directory: ' + (Get-Location).Path)
+              Write-Host ('Git Branch: ' + (git branch --show-current))
+              Write-Host ('Python Version: ' + (python --version))
+              Write-Host ('Python Interpreter Path: ' + (Get-Command python).Source)
+              Write-Host '-----------------------------'
+            }
+          "
+        platforms: [windows]
+
+  dev.setup-env:
+    desc: Setup a virtual environment on linux platform
+    silent: true
+    vars:
+      ENV_PREFIX: '{{.env_name | default .ENV_PREFIX | trimSuffix "-dev"}}'
+      VENV: "{{.ENV_PREFIX}}-dev"
+      VENV_PATH: "./{{.VENV}}"
+      PYTHON_VERSION: '{{.python | default "3.12"}}'
+      DOCS: '{{.docs | default "false"}}'
+      BUILD: '{{.build | default "false"}}'
+      FORMATTING: '{{.formatting | default "false"}}'
+      TESTING: '{{.testing | default "false"}}'
+      USECASE: '{{.usecase | default ""}}'
+      ADDON: '{{.addon | default ""}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task dev.setup-env [env_name=<name>] [python=3.10|3.11|3.12] [docs=true|false] [build=true|false] [formatting=true|false] [testing=true|false]
+
+        Description:
+          Sets up a regular (non-spark) python virtual environment.
+
+        Options:
+          env_name       Optional. The base name of the environment (e.g., "pyspark-dev").
+                         If the name ends with "-dev", the suffix is trimmed automatically.
+                         The final virtual environment name will be "env_name_trimmed-dev".
+                         Default: ta-lib-dev
+
+          python         Captures the python version from the user. Default: 3.12
+          docs           If "true", installs documentation-related dependencies. Default: false
+          build          If "true", installs package build related dependencies. Default: false
+          formatting     If "true", installs code formatting dependencies (e.g. black, isort, flake8). Default: false
+          testing        If "true", installs testing-related dependencies (e.g. pytest, coverage). Default: false
+          usecase        Install usecase dependencies: ebo, tpo, mmx, rtm, reco. Default: none
+          addon          Install additional addon dependencies: bayesian_dev, extras, jupyter, tareg_dev, ts_dev. Default: none
+
+        Example:
+          task dev.setup-env env_name=myproject-dev python=3.11 docs=true formatting=true testing=true
+
+        Notes:
+          - The environment will be created inside the root directory.
+          - Uses 'uv pip install' under the hood.
+    cmds:
+      - cmd: |
+          set -e # makes sure setup stops in the presence of any error
+
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            # main logic
+            echo "Step: Creating virtual environment ..."
+            if [ "{{.PYTHON_VERSION}}" ]; then
+              uv venv "{{.VENV}}" --python={{.PYTHON_VERSION}} --seed
+            fi
+
+            echo "Step: Installing the core dependencies"
+            uv pip install -p "./{{.VENV}}" -e .
+
+            if [ "{{.DOCS}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_documentation"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group addon_documentation
+            fi
+
+            if [ "{{.BUILD}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - pkg_build"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group pkg_build
+            fi
+
+            if [ "{{.FORMATTING}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_code_format"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group addon_code_format
+            fi
+
+            if [ "{{.TESTING}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_testing"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group addon_testing
+            fi
+
+            valid_usecase=("ebo" "tpo" "mmx" "rtm" "reco")
+            if [[ -n "{{.USECASE}}" ]]; then
+              if [[ " ${valid_usecase[*]} " =~ " {{.USECASE}} " ]]; then
+                echo "Step: Installing the usecase - {{.USECASE}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[ct_{{.USECASE}}_dev]"
+              else
+                echo "Warning: Invalid usecase '{{.USECASE}}'. Skipping usecase installation."
+              fi
+            fi
+
+            valid_addons=("bayesian_dev" "extras" "jupyter" "tareg_dev" "ts_dev")
+            if [[ -n "{{.ADDON}}" ]]; then
+              if [[ " ${valid_addons[*]} " =~ " {{.ADDON}} " ]]; then
+                echo "Step: Installing the usecase - {{.ADDON}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[addon_{{.ADDON}}]"
+              else
+                echo "Warning: Invalid usecase '{{.ADDON}}'. Skipping usecase installation."
+              fi
+            fi
+
+            echo "To activate the environment run: source {{.VENV}}/bin/activate"
+          fi
+        platforms: [linux, darwin]
+
+      - cmd: |
+          set -e # makes sure setup stops in the presence of any error
+
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            # main logic
+            echo "Step: Creating virtual environment ..."
+            if [ "{{.PYTHON_VERSION}}" ]; then
+              uv venv "{{.VENV}}" --python={{.PYTHON_VERSION}} --seed --native-tls
+            fi
+
+            echo "Step: Installing the core dependencies"
+            uv pip install -p "./{{.VENV}}" -e . --native-tls
+
+            if [ "{{.DOCS}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_documentation"
+              uv pip install --python '{{.VENV_PATH}}/Scripts/python.exe' --group addon_documentation --native-tls
+            fi
+
+            if [ "{{.BUILD}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - pkg_build"
+              uv pip install --python '{{.VENV_PATH}}/Scripts/python.exe' --group pkg_build --native-tls
+            fi
+
+            if [ "{{.FORMATTING}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_code_format"
+              uv pip install --python '{{.VENV_PATH}}/Scripts/python.exe' --group addon_code_format --native-tls
+            fi
+
+            if [ "{{.TESTING}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_testing"
+              uv pip install --python '{{.VENV_PATH}}/Scripts/python.exe' --group addon_testing --native-tls
+            fi
+
+            valid_usecase=("ebo" "tpo" "mmx" "rtm" "reco")
+            if [[ -n "{{.USECASE}}" ]]; then
+              if [[ " ${valid_usecase[*]} " =~ " {{.USECASE}} " ]]; then
+                echo "Step: Installing the usecase - {{.USECASE}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[ct_{{.USECASE}}_dev]"
+              else
+                echo "Warning: Invalid usecase '{{.USECASE}}'. Skipping usecase installation."
+              fi
+            fi
+
+            valid_addons=("bayesian_dev" "extras" "jupyter" "tareg_dev" "ts_dev")
+            if [[ -n "{{.ADDON}}" ]]; then
+              if [[ " ${valid_addons[*]} " =~ " {{.ADDON}} " ]]; then
+                echo "Step: Installing the usecase - {{.ADDON}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[addon_{{.ADDON}}]"
+              else
+                echo "Warning: Invalid usecase '{{.ADDON}}'. Skipping usecase installation."
+              fi
+            fi
+
+            echo "To activate the environment run: source {{.VENV}}/Scripts/activate"
+          fi
+        platforms: [windows]
+
+    sources:
+      - pyproject.toml
+
+  dev.setup-env-pyspark:
+    desc: |
+      Sets up the PySpark development environment.
+    silent: true
+    vars:
+      ENV_PREFIX_PYSPARK: '{{.env_name | default .ENV_PREFIX_PYSPARK | trimSuffix "-dev"}}'
+      VENV: "{{.ENV_PREFIX_PYSPARK}}-dev"
+      VENV_PATH: "./{{.VENV}}"
+      PYTHON_VERSION: '{{.python | default "3.12"}}'
+      DOCS: '{{.docs | default "false"}}'
+      BUILD: '{{.build | default "false"}}'
+      FORMATTING: '{{.formatting | default "false"}}'
+      TESTING: '{{.testing | default "false"}}'
+      USECASE: '{{.usecase | default ""}}'
+      ADDON: '{{.addon | default ""}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task dev.setup-env-pyspark [env_name=<name>] [python=3.10|3.11|3.12] [docs=true|false] [build=true|false] [formatting=true|false] [testing=true|false]
+
+        Description:
+          Sets up a python virtual environment specifically for using Spark.
+
+        Options:
+          env_name       Optional. The base name of the environment (e.g., "pyspark-dev").
+                         If the name ends with "-dev", the suffix is trimmed automatically.
+                         The final virtual environment name will be "env_name_trimmed-dev".
+                         Default: ta-lib-pyspark-dev
+
+          python         Captures the python version from the user. Default: 3.12
+          docs           If "true", installs documentation-related dependencies. Default: false
+          build          If "true", installs package build related dependencies. Default: false
+          formatting     If "true", installs code formatting dependencies (e.g. black, isort, flake8). Default: false
+          testing        If "true", installs testing-related dependencies (e.g. pytest, coverage). Default: false
+          usecase        Install usecase dependencies: ebo, tpo, mmx, rtm, reco. Default: none
+          addon          Install additional addon dependencies: bayesian_dev, extras, jupyter, tareg_dev, ts_dev. Default: none
+
+        Example:
+          task dev.setup-env-pyspark env_name=pyspark-dev python=3.11 docs=true formatting=true testing=true
+
+        Notes:
+          - The environment will be created inside the root directory.
+          - Uses 'uv pip install' under the hood.
+    cmds:
+      - cmd: |
+          set -e # makes sure setup stops in the presence of any error
+
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            # main logic
+            echo "Step: Checking Spark and Java prerequisites..."
+            if [ -z "$JAVA_HOME" ]; then
+              echo "ERROR: JAVA_HOME is not set."
+              echo "Please install Java Development Kit (JDK) and set the JAVA_HOME environment variable."
+              exit 1
+            fi
+            if [ -z "$SPARK_HOME" ]; then
+              echo "ERROR: SPARK_HOME is not set."
+              echo "Please install Apache Spark and set the SPARK_HOME environment variable."
+              exit 1
+            fi
+            echo "  JAVA_HOME: $JAVA_HOME"
+            echo "  SPARK_HOME: $SPARK_HOME"
+            echo "Prerequisites seem to be met."
+
+            echo "Step: Creating virtual environment '{{.VENV}}' using uv..."
+            if [ "{{.PYTHON_VERSION}}" ]; then
+              uv venv "{{.VENV}}" --python={{.PYTHON_VERSION}} --seed
+            fi
+
+            echo "Step: Installing tigerml in editable mode ..."
+            uv pip install -p "./{{.VENV}}" -e .
+
+            echo "Step: Installing pyspark optional dependencies into '{{.VENV}}'..."
+            uv pip install --python '{{.VENV_PATH}}/bin/python' ".[ct_pyspark_dev]"
+
+            if [ "{{.DOCS}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_documentation"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group addon_documentation
+            fi
+
+            if [ "{{.BUILD}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - pkg_build"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group pkg_build
+            fi
+
+            if [ "{{.FORMATTING}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_code_format"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group addon_code_format
+            fi
+
+            if [ "{{.TESTING}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_testing"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group addon_testing
+            fi
+
+            valid_usecase=("ebo" "tpo" "mmx" "rtm" "reco")
+            if [[ -n "{{.USECASE}}" ]]; then
+              if [[ " ${valid_usecase[*]} " =~ " {{.USECASE}} " ]]; then
+                echo "Step: Installing the usecase - {{.USECASE}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[ct_{{.USECASE}}_dev]"
+              else
+                echo "Warning: Invalid usecase '{{.USECASE}}'. Skipping usecase installation."
+              fi
+            fi
+
+            valid_addons=("bayesian_dev" "extras" "jupyter" "tareg_dev" "ts_dev")
+            if [[ -n "{{.ADDON}}" ]]; then
+              if [[ " ${valid_addons[*]} " =~ " {{.ADDON}} " ]]; then
+                echo "Step: Installing the usecase - {{.ADDON}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[addon_{{.ADDON}}]"
+              else
+                echo "Warning: Invalid usecase '{{.ADDON}}'. Skipping usecase installation."
+              fi
+            fi
+
+            echo ""
+            echo "SUCCESS: PySpark environment '{{.VENV}}' created and dependencies installed."
+            echo "--------------------------------------------------------------------------"
+            echo "To activate this environment, run from your project root:"
+            echo "  source {{.VENV}}/bin/activate"
+            echo ""
+            echo "IMPORTANT: For PySpark to correctly use this environment and your Spark installation,"
+            echo "ensure the following environment variables are set in your activated shell session:"
+            echo "  (Your system-wide SPARK_HOME and JAVA_HOME should already be set and sourced)"
+            echo ""
+            echo "  # These tell Spark which Python to use for driver and executors:"
+            echo "  export PYSPARK_PYTHON=\"$(pwd)/{{.VENV}}/bin/python\""
+            echo "  export PYSPARK_DRIVER_PYTHON=\"$(pwd)/{{.VENV}}/bin/python\""
+            echo ""
+            echo "  # This ensures Python can find Spark's Py4J and other Python libraries:"
+            echo "  export PYTHONPATH=\"\$SPARK_HOME/python:\$SPARK_HOME/python/lib/py4j-*-src.zip:\$PYTHONPATH\""
+            echo "--------------------------------------------------------------------------"
+            echo "Creating .envrc file for direnv integration..."
+            cat <<EOF > .envrc
+            export PYSPARK_PYTHON="$(pwd)/{{.VENV}}/bin/python"
+            export PYSPARK_DRIVER_PYTHON="$(pwd)/{{.VENV}}/bin/python"
+            export PYTHONPATH="$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-*-src.zip:$PYTHONPATH"
+          EOF
+
+            echo ""
+            echo "SUCCESS: .envrc file created in project root."
+            echo "Run the following command to enable it: direnv allow"
+          fi
+        platforms: [linux, darwin]
+
+      - cmd: |
+          set -e # makes sure setup stops in the presence of any error
+
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            # main logic
+            echo "Step: Checking Spark and Java prerequisites..."
+            if [ -z "$JAVA_HOME" ]; then
+              echo "ERROR: JAVA_HOME is not set."
+              echo "Please install Java Development Kit (JDK) and set the JAVA_HOME environment variable."
+              exit 1
+            fi
+            if [ -z "$SPARK_HOME" ]; then
+              echo "ERROR: SPARK_HOME is not set."
+              echo "Please install Apache Spark and set the SPARK_HOME environment variable."
+              exit 1
+            fi
+            echo "  JAVA_HOME: $JAVA_HOME"
+            echo "  SPARK_HOME: $SPARK_HOME"
+            echo "Prerequisites seem to be met."
+
+            echo "Step: Creating virtual environment '{{.VENV}}' using uv..."
+            if [ "{{.PYTHON_VERSION}}" ]; then
+              uv venv "{{.VENV}}" --python={{.PYTHON_VERSION}} --seed --native-tls
+            fi
+
+            echo "Step: Installing tigerml in editable mode ..."
+            uv pip install -p "./{{.VENV}}" -e . --native-tls
+
+            echo "Step: Installing pyspark optional dependencies into '{{.VENV}}'..."
+            uv pip install --python '{{.VENV_PATH}}\Scripts\python.exe' ".[ct_pyspark_dev]" --native-tls
+
+            if [ "{{.DOCS}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_documentation"
+              uv pip install --python '{{.VENV_PATH}}\Scripts\python.exe' --group addon_documentation --native-tls;
+            fi
+
+            if [ "{{.BUILD}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - pkg_build"
+              uv pip install --python '{{.VENV_PATH}}\Scripts\python.exe' --group pkg_build --native-tls;
+            fi
+
+            if [ "{{.FORMATTING}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_code_format"
+              uv pip install --python '{{.VENV_PATH}}\Scripts\python.exe' --group addon_code_format --native-tls;
+            fi
+
+            if [ "{{.TESTING}}" == "true" ]; then
+              echo "Step: Installing the optional dependencies - addon_testing"
+              uv pip install --python '{{.VENV_PATH}}\Scripts\python.exe' --group addon_testing --native-tls;
+            fi
+
+            valid_usecase=("ebo" "tpo" "mmx" "rtm" "reco")
+            if [[ -n "{{.USECASE}}" ]]; then
+              if [[ " ${valid_usecase[*]} " =~ " {{.USECASE}} " ]]; then
+                echo "Step: Installing the usecase - {{.USECASE}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[ct_{{.USECASE}}_dev]"
+              else
+                echo "Warning: Invalid usecase '{{.USECASE}}'. Skipping usecase installation."
+              fi
+            fi
+
+            valid_addons=("bayesian_dev" "extras" "jupyter" "tareg_dev" "ts_dev")
+            if [[ -n "{{.ADDON}}" ]]; then
+              if [[ " ${valid_addons[*]} " =~ " {{.ADDON}} " ]]; then
+                echo "Step: Installing the usecase - {{.ADDON}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[addon_{{.ADDON}}]"
+              else
+                echo "Warning: Invalid usecase '{{.ADDON}}'. Skipping usecase installation."
+              fi
+            fi
+
+            echo ""
+            echo "SUCCESS: PySpark environment '{{.VENV}}' created and dependencies installed."
+            echo "--------------------------------------------------------------------------"
+            echo "To activate this environment, run from your project root:"
+            echo "  source {{.VENV}}/Scripts/activate"
+            echo ""
+            echo "IMPORTANT: For PySpark to correctly use this environment and your Spark installation,"
+            echo "ensure the following environment variables are set in your activated shell session:"
+            echo "  (Your system-wide SPARK_HOME and JAVA_HOME should already be set and sourced)"
+            echo ""
+            echo "  # These tell Spark which Python to use for driver and executors:"
+            echo "  export PYSPARK_PYTHON=\"$(pwd)/{{.VENV}}/Scripts/python.exe\""
+            echo "  export PYSPARK_DRIVER_PYTHON=\"$(pwd)/{{.VENV}}/Scripts/python.exe\""
+            echo ""
+            echo "  # This ensures Python can find Spark's Py4J and other Python libraries:"
+            echo "  export PYTHONPATH=\"\$SPARK_HOME/python:\$SPARK_HOME/python/lib/py4j-*-src.zip:\$PYTHONPATH\""
+            echo "--------------------------------------------------------------------------"
+            echo "Creating .envrc file for direnv integration..."
+            cat <<EOF > .envrc
+            export PYSPARK_PYTHON="$(pwd)/{{.VENV}}/Scripts/python.exe"
+            export PYSPARK_DRIVER_PYTHON="$(pwd)/{{.VENV}}/Scripts/python.exe"
+            export PYTHONPATH="$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-*-src.zip:$PYTHONPATH"
+          EOF
+
+            echo ""
+            echo "SUCCESS: .envrc file created in project root."
+            echo "Run the following command to enable it: direnv allow"
+
+          fi
+        platforms: [windows]
+    status:
+      - test -d {{.VENV_PATH}} && test -f {{.PYTHON_EXEC}}
+
+  dev.setup-addon:
+    desc: Installs addon packages
+    silent: true
+    vars:
+      ENV_PREFIX_PYSPARK: '{{.env_name | default .ENV_PREFIX | trimSuffix "-dev"}}'
+      VENV: "{{.ENV_PREFIX_PYSPARK}}-dev"
+      VENV_PATH: "./{{.VENV}}"
+      DOCS: '{{.docs | default "false"}}'
+      BUILD: '{{.build | default "false"}}'
+      FORMATTING: '{{.formatting | default "false"}}'
+      TESTING: '{{.testing | default "false"}}'
+      USECASE: '{{.usecase | default ""}}'
+      ADDON: '{{.addon | default ""}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task dev.setup-addon [env_name=<name>] [docs=true|false] [build=true|false] [formatting=true|false] [testing=true|false]
+
+        Description:
+          Installs optional addon dependencies (docs, formatting, testing) into the corresponding Python virtual environment.
+
+        Options:
+          env_name       Optional. The base name of the environment (e.g., "pyspark-dev").
+                         If the name ends with "-dev", the suffix is trimmed automatically.
+                         The final virtual environment name will be "env_name_trimmed-dev".
+                         Default: ta-lib-dev
+
+          docs           If "true", installs documentation-related dependencies. Default: false
+          build          If "true", installs package build related dependencies. Default: false
+          formatting     If "true", installs code formatting dependencies (e.g. black, isort, flake8). Default: false
+          testing        If "true", installs testing-related dependencies (e.g. pytest, coverage). Default: false
+          usecase        Install usecase dependencies: ebo, tpo, mmx, rtm, reco. Default: none
+          addon          Install additional addon dependencies: bayesian_dev, extras, jupyter, tareg_dev, ts_dev. Default: none
+
+        Example:
+          task dev.setup-addon env_name=pyspark-dev docs=true formatting=true
+
+        Notes:
+          - The environment is expected to exist at "./env_name_trimmed-dev".
+          - Uses 'uv pip install' under the hood.
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            # main logic
+            echo "Environment detected: {{.VENV}}"
+
+            if [ "{{.DOCS}}" == "true" ]; then
+              echo "Installing the optional dependencies - addon_documentation"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group addon_documentation
+            fi
+
+            if [ "{{.BUILD}}" == "true" ]; then
+              echo "Installing the optional dependencies - pkg_build"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group pkg_build
+            fi
+
+            if [ "{{.FORMATTING}}" == "true" ]; then
+              echo "Installing the optional dependencies - addon_code_format"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group addon_code_format
+            fi
+
+            if [ "{{.TESTING}}" == "true" ]; then
+              echo "Installing the optional dependencies - addon_testing"
+              uv pip install --python '{{.VENV_PATH}}/bin/python' --group addon_testing
+            fi
+
+            valid_usecase=("ebo" "tpo" "mmx" "rtm" "reco")
+            if [[ -n "{{.USECASE}}" ]]; then
+              if [[ " ${valid_usecase[*]} " =~ " {{.USECASE}} " ]]; then
+                echo "Step: Installing the usecase - {{.USECASE}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' -e ".[ct_{{.USECASE}}_dev]"
+              else
+                echo "Warning: Invalid usecase '{{.USECASE}}'. Skipping usecase installation."
+              fi
+            fi
+
+            valid_addons=("bayesian_dev" "extras" "jupyter" "tareg_dev" "ts_dev")
+            if [[ -n "{{.ADDON}}" ]]; then
+              if [[ " ${valid_addons[*]} " =~ " {{.ADDON}} " ]]; then
+                echo "Step: Installing the usecase - {{.ADDON}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' -e ".[addon_{{.ADDON}}]"
+              else
+                echo "Warning: Invalid usecase '{{.ADDON}}'. Skipping usecase installation."
+              fi
+            fi
+
+          fi
+        platforms: [linux, darwin]
+
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            # main logic
+            echo "Environment detected: {{.VENV}}"
+
+            if [ "{{.DOCS}}" == "true" ]; then
+              echo "Installing the optional dependencies - addon_documentation"
+              uv pip install --python '{{.VENV_PATH}}\Scripts\python.exe' --group addon_documentation
+            fi
+
+            if [ "{{.BUILD}}" == "true" ]; then
+              echo "Installing the optional dependencies - pkg_build"
+              uv pip install --python '{{.VENV_PATH}}\Scripts\python.exe' --group pkg_build
+            fi
+
+            if [ "{{.FORMATTING}}" == "true" ]; then
+              echo "Installing the optional dependencies - addon_code_format"
+              uv pip install --python '{{.VENV_PATH}}\Scripts\python.exe' --group addon_code_format
+            fi
+
+            if [ "{{.TESTING}}" == "true" ]; then
+              echo "Installing the optional dependencies - addon_testing"
+              uv pip install --python '{{.VENV_PATH}}\Scripts\python.exe' --group addon_testing
+            fi
+
+            valid_usecase=("ebo" "tpo" "mmx" "rtm" "reco")
+            if [[ -n "{{.USECASE}}" ]]; then
+              if [[ " ${valid_usecase[*]} " =~ " {{.USECASE}} " ]]; then
+                echo "Step: Installing the usecase - {{.USECASE}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[ct_{{.USECASE}}_dev]"
+              else
+                echo "Warning: Invalid usecase '{{.USECASE}}'. Skipping usecase installation."
+              fi
+            fi
+
+            valid_addons=("bayesian_dev" "extras" "jupyter" "tareg_dev" "ts_dev")
+            if [[ -n "{{.ADDON}}" ]]; then
+              if [[ " ${valid_addons[*]} " =~ " {{.ADDON}} " ]]; then
+                echo "Step: Installing the usecase - {{.ADDON}}"
+                uv pip install --python '{{.VENV_PATH}}/bin/python' ".[addon_{{.ADDON}}]"
+              else
+                echo "Warning: Invalid usecase '{{.ADDON}}'. Skipping usecase installation."
+              fi
+            fi
+
+          fi
+        platforms: [windows]
+
+  dev.clean-env:
+    desc: Removes environment directory
+    silent: true
+    vars:
+      VENV: '{{.env_name | default "*-dev"}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task dev.clean-env
+
+        Description:
+          Removes the environment directory from disk.
+
+        Options:
+          env_name       Optional. The name of the environment (e.g., "pyspark-dev") to be deleted.
+                         Default is any directory with the suffix "-dev".
+
+        Example:
+          task dev.clean-env
+          task dev.clean-env myenv-dev
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            # main logic
+            rm -rf {{.VENV}}
+          fi
+        platforms: [linux, darwin, windows]
+
+  # ----------------------------- Code Formatting ----------------------------- #
+  dev.format-code:
+    desc: Format the codebase
+    silent: true
+    vars:
+      PATH: '{{.path | default "src/ta_lib/"}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task dev.format-code [path=your/code/path]
+
+        Description:
+          Formats the Python codebase using 'black' and 'isort'.
+
+        Options:
+          path       Optional. Path to the directory or files to format.
+                     Defaults to "python/tigerml/".
+
+        Example:
+          task dev.format-code path="python/tigerml/"
+
+        Notes:
+          - Requires 'black' and 'isort' to be installed in your environment.
+          - The environment must be activated.
+          - This enforces consistent code formatting.
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            echo "Formatting code at path: {{.PATH}}"
+            black {{.PATH}}
+            isort {{.PATH}}
+          fi
+        platforms: [linux, darwin, windows]
+
+  # ----------------------------- Building Documentation ----------------------------- #
+  build.docs:
+    desc: Build the documentation
+    silent: true
+    vars:
+      HELP_TEXT: |-
+
+        Usage:
+          task build.docs
+
+        Description:
+          Compiles the Sphinx source (.rst) files and builds the project documentation.
+
+        Example:
+          task build.docs
+
+        Notes:
+          - Sphinx compilation needs an activated python environment with 'docs' addons installed
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            # main logic
+            echo "Building documentation..."
+            # python -m sphinx -b html docs/source docs/build/html
+            # cd docs/source && sphinx-build -T -E -W --keep-going -b html -d ../build/doctrees  . ../build/html
+            sphinx-build -b html -E -a docs/source docs/build/html #TODO: check differences with the legacy build command
+          fi
+
+        platforms: [linux, darwin, windows]
+
+  launch.docs:
+    desc: Launch the documentation
+    silent: true
+    vars:
+      PORT: '{{.port | default "8081"}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task launch.docs
+
+        Description:
+          Serves the Sphinx HTML builds from /docs/build/html directory using a local server.
+
+        Options:
+          port           Port allocated to the locally running python http server. Default: 4000
+
+        Example:
+          task launch.docs
+
+        Notes:
+          - Uses python's http.server module under the hood to serve the documentation locally.
+          - An environment should be activated to create the server locally.
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            # main logic
+            echo "Launching documentation server on port {{.PORT}}..."
+            python -m http.server --bind 127.0.0.1 --directory docs/build/html {{.PORT}}
+          fi
+        platforms: [linux, darwin, windows]
+
+  # ----------------------------- Testing ----------------------------- #
+  test.qc:
+    desc: Run quality control tests
+    silent: true
+    vars:
+      PATH: '{{.path | default "src/ta_lib/"}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task test.qc
+
+        Description:
+          Performs quality checks on the python source codes using code formatting tools.
+
+        Options:
+          path           Target path for source formatting. Default: 'src/ta_lib/'
+
+        Example:
+          task test.qc
+
+        Notes:
+          - Uses tools like black, isort and flake8 to check for formatting issues.
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            # main logic
+            echo "Running quality control checks..."
+            python -m black --check {{.PATH}}
+            python -m isort --check-only --skip-glob "src/ta_lib/_vendor/**" {{.PATH}}
+            python -m flake8 {{.PATH}}
+          fi
+
+        platforms: [linux, darwin, windows]
+
+  # test.all: #TODO: Update task
+  #   desc: Run all tests
+  #   silent: true
+  #   cmds:
+  #     - cmd: |
+  #         echo "Running all tests..."
+  #         # Add the command to run all your project's tests
+  #         # This might involve a test runner like pytest, unittest, or others.
+  #         # Example using pytest:
+  #         # - pytest
+  #         # Example using unittest discovery:
+  #         # - python -m unittest discover -s tests
+  #         # echo "All tests finished."
+  #       platforms: [linux, darwin]
+
+  test.complexity:
+    desc: Calculate code complexity using Radon
+    silent: true
+    vars:
+      PATH: '{{.path | default "src/ta_lib/"}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task test.complexity
+
+        Description:
+          Calculates cyclomatic complexity for the Python source code using Radon.
+
+        Options:
+          path           Target path. Default: 'src/ta_lib/'
+
+        Example:
+          task test.complexity
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            echo "Running Radon complexity analysis..."
+            python -m radon cc "{{.PATH}}" -s -a
+          fi
+        platforms: [linux, darwin, windows]
+
+  test.unittest:
+    desc: Run unit tests
+    silent: true
+    vars:
+      HELP_TEXT: |-
+
+        Usage:
+          task test.qc
+
+        Description:
+          Runs the unittests for the sub-packages defined in 'PACKAGE_LIST'.
+
+        Example:
+          task test.unittest
+
+        Notes:
+          - Uses 'for loop' to iterate over the 'PACKAGE_LIST'.
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            # main logic
+            for pkg in {{range .PACKAGE_LIST}}"{{.}}" {{end}}; do
+              echo "Running tests in {{.TEST_BASE_PATH}}/$pkg"
+              pytest -v "{{.TEST_BASE_PATH}}/$pkg"
+            done
+          fi
+        platforms: [linux, darwin, windows]
+
+  # test.val-env: #TODO: Update task
+  #   desc: Validate the environment
+  #   cmds:
+  #     - cmd: |
+  #         echo "Validating the environment..."
+  #         # Add commands to check if necessary environment variables are set,
+  #         # required tools are installed, or configurations are in place for testing.
+  #         # Examples:
+  #         # - env | grep API_KEY || echo "Warning: API_KEY environment variable not set."
+  #         # - command -v some_dependency || echo "Error: 'some_dependency' is missing." && exit 1
+  #         # echo "Environment validation finished."
+  #       platforms: [linux, darwin]
+
+  test.vuln: #FIXME
+    desc: Run vulnerability test using safety
+    silent: true
+    vars:
+      ENV_PREFIX_PYSPARK: '{{.env_name | default .ENV_PREFIX | trimSuffix "-dev"}}'
+      VENV: "{{.ENV_PREFIX_PYSPARK}}-dev"
+      VENV_PATH: "./{{.VENV}}"
+      PYTHON_EXEC: "{{.VENV_PATH}}/bin/python"
+      HELP_TEXT: |-
+
+        Usage:
+          task test.vuln
+
+        Description:
+          Runs the vulnerability scan for all the packages inside an environment.
+
+        Options:
+          env_name       Optional. The base name of the environment (e.g., "pyspark-dev").
+                         If the name ends with "-dev", the suffix is trimmed automatically.
+                         The final virtual environment name will be "env_name_trimmed-dev".
+
+        Example:
+          task test.vuln
+
+        Notes:
+          - Uses the python package 'safety' to scan the packages.
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            # main logic
+            uv pip freeze --python {{.VENV_PATH}}/bin/python | safety scan --stdin
+          fi
+        platforms: [linux, darwin]
+
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            # main logic
+            uv pip freeze --python {{.VENV_PATH}}/Scripts/python.exe | safety scan --stdin
+          fi
+        platforms: [windows]
+
+  # ----------------------------- Containerization ----------------------------- #
+  # dev.build-docker: #TODO: Update task
+  #   desc: Build the docker image
+  #   silent: true
+  #   cmds:
+  #     - cmd: |
+  #         echo "Building docker image..."
+  #         # Add the actual Docker build command here
+  #         # For example:
+  #         # - docker build -t your-image-name .
+  #         # Or if you have a specific Dockerfile:
+  #         # - docker build -t your-image-name -f Dockerfile.dev .
+  #         # echo "Docker image build finished."
+  #       platforms: [linux, darwin]
+
+  # ----------------------------- Manage Version Info ----------------------------- #
+  # dev.refresh-version: #TODO: Update task
+  #   desc: Refresh the version
+  #   cmds:
+  #     - cmd: |
+  #         echo "Refreshing version information..."
+  #         # Add the command to refresh your project's version here
+  #         # This might involve updating a file or running a script
+  #         # echo "Version information refreshed."
+  #       platforms: [linux, darwin]
+
+  # ----------------------------- Building Wheel ----------------------------- #
+  build.pkg-dist:
+    desc: Builds the package distribution as a wheel files
+    silent: true
+    vars:
+      HELP_TEXT: |-
+
+        Usage:
+          task build.pkg-dist
+
+        Description:
+          Builds the package distribution as a wheel (.whl) file.
+
+        Example:
+          task build.pkg-dist
+
+        Notes:
+          - Building wheel needs an activated python environment with 'build' addons installed
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            echo "Building wheel..."
+            python -m build --wheel
+          fi
+        platforms: [linux, darwin, windows]
+
+  launch.jupyterlab:
+    desc: Launch JupyterLab
+    silent: true
+    vars:
+      IP: '{{.ip | default "localhost"}}'
+      PORT: '{{.port | default "8080"}}'
+      TOKEN: '{{.token | default ""}}'
+      PASSWORD: '{{.password | default ""}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task launch.jupyterlab [ip=<ip-address>] [port=<port>] [token=<auth-token>] [password=<hashed-password>]
+
+        Description:
+          Starts a JupyterLab server using the selected virtual environment.
+
+        Options:
+          ip             IP address to bind the server to. Default: localhost
+          port           Port to run the JupyterLab server on. Default: 8080
+          token          Token used for authentication. Default: ""
+          password       Password hash used for authentication. Default: ""
+
+        Example:
+          task launch.jupyterlab ip=0.0.0.0 port=8888 token=abc123
+
+        Notes:
+          - This task runs JupyterLab with no browser window opened (--no-browser).
+          - The password must be a pre-generated hashed string using Jupyter's password utility if provided.
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            echo "Launching JupyterLab server on port {{.PORT}}..."
+            jupyter lab \
+              --ip={{.IP}} \
+              --port={{.PORT}} \
+              --NotebookApp.token='{{.TOKEN}}' \
+              --NotebookApp.password='{{.PASSWORD}}' \
+              --no-browser
+          fi
+        platforms: [linux, darwin, windows]
+
+  dev.run-notebooks:
+    desc: Run Jupyter notebooks
+    silent: true
+    vars:
+      TEMPLATE: '{{.template | default "all"}}'
+      NOTEBOOKID: '{{.notebookid | default "all"}}'
+      TIMEOUT: '{{.timeout | default "600"}}'
+      REFRESH: '{{.refresh | default "False"}}'
+      NOTEBOOK_FOLDER: './notebooks/tests'
+      HELP_TEXT: |-
+
+        Usage:
+          task run.notebooks [template=<name>] [notebookid=<id>] [timeout=<seconds>] [refresh=True|False]
+
+        Description:
+          Runs notebooks under the specified template to check for execution errors.
+          If refresh=True, successful notebooks are refreshed.
+
+        Options:
+          template       Folder name under 'notebooks' to run. Options: regression, classification, all. Default: all
+          notebookid     Notebook ID to run. Options: 01, 02, 03, all. Default: all
+          timeout        Timeout for notebook execution in seconds. Default: 600
+          refresh        Boolean indicating whether to refresh notebook outputs on success. Default: False
+
+        Example:
+          task dev.run-notebooks template=regression notebookid=01 timeout=900 refresh=True
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo '{{.HELP_TEXT}}'
+            exit 0
+          else
+            echo "Running notebooks:"
+            echo "Template: {{.TEMPLATE}}, NotebookID: {{.NOTEBOOKID}}, Timeout: {{.TIMEOUT}}, Refresh: {{.REFRESH}}"
+            python "{{.NOTEBOOK_FOLDER}}/utils.py" "{{.TEMPLATE}}" "{{.NOTEBOOKID}}" "{{.TIMEOUT}}" "{{.REFRESH}}"
+          fi
+        platforms: [linux, darwin, windows]

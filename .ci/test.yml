@@ -1,0 +1,39 @@
+# Linux test
+linux-test:
+  stage: test
+  needs: []
+  script:
+    - apt-get update && apt-get install -y git openssh-client tar
+    - git config --global user.email "ci@example.com"
+    - git config --global user.name "GitLab CI"
+    - git clone --depth 1 https://${ct_archive}@git.tigeranalytics.com/tiger-accelerators/dsml-accelerators/TigerML.git src/TigerML
+    - cd src/TigerML
+    - uv pip install -e .
+    - cd ../..
+
+    - echo "Formatting Checks..."
+    - task test.qc
+    - echo "Running pytest"
+    - task test.unittest
+
+  rules:
+
+    # Rule 1: Merge request to main or dev
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev")'
+      changes:
+        - src/**/*
+      when: always
+
+    # Rule 2: Push to dev
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev")'
+      changes:
+        - src/**/*
+      when: always
+
+    # # Rule 3: Push to any branch for testing
+    # - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH != "master" || $CI_COMMIT_BRANCH != "dev")'
+    #   changes:
+    #     - python/**/*
+    #   when: always
+
+    - when: never

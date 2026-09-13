@@ -1,0 +1,112 @@
+# builds sphinx docs using Taskfile
+generate-docs:
+  stage: build-docs
+  needs: []
+  script:
+    - apt-get update && apt-get install -y git openssh-client tar
+    - git config --global user.email "ci@example.com"
+    - git config --global user.name "GitLab CI"
+    - git clone --depth 1 https://${ct_archive}@git.tigeranalytics.com/tiger-accelerators/dsml-accelerators/TigerML.git src/TigerML
+    - cd src/TigerML
+    - uv pip install -e.
+    - cd ../..
+
+    - echo "Building Sphinx Docs"
+    - sphinx-build -b html -E -a docs/source $DOCS_BUILD_DIR
+
+    - echo "Determining target directory"
+    - |
+      if [ "$CI_COMMIT_REF_NAME" = "master" ]; then
+        export VERSION_DIR="latest"
+      else
+        export VERSION_DIR="$CI_COMMIT_REF_NAME"
+      fi
+
+    - mkdir -p "$VERSION_DIR"
+    - cp -r $DOCS_BUILD_DIR/* "$VERSION_DIR/"
+    - tar -czf site.tgz -C "$VERSION_DIR" .
+  artifacts:
+    paths:
+      - site.tgz
+    expire_in: 1 hour
+  rules:
+
+    # Rule 1: Merge request to main or dev
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev")'
+      changes:
+        - docs/**/*
+      when: always
+
+    # Rule 2: Push to dev
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev")'
+      changes:
+        - docs/**/*
+      when: always
+
+    # # Rule 3: Push to any branch for testing
+    # - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH != "master" || $CI_COMMIT_BRANCH != "dev")'
+    #   changes:
+    #     - docs/**/*
+    #   when: always
+
+    - when: never
+
+
+# deploys docs using GitLab Pages
+publish-docs:
+  stage: deploy-docs
+  needs:
+    - job: generate-docs
+      artifacts: true
+      optional: false
+  script:
+    - apt-get update && apt-get install -y git openssh-client tar
+    - git config --global user.email "ci@example.com"
+    - git config --global user.name "GitLab CI"
+    - echo $CI_PROJECT_PATH
+    - echo $PAGES_USER
+    - echo $PAGES_TOKEN
+    - echo cloning repo
+    - git clone --depth 1 --branch pages https://$PAGES_USER:$PAGES_TOKEN@git.tigeranalytics.com/$CI_PROJECT_PATH.git pages
+    - cd pages
+    - |
+      VERSION_DIR="${CI_COMMIT_REF_NAME}"
+      if [ "$CI_COMMIT_REF_NAME" = "master" ]; then
+        export VERSION_DIR="latest"
+      else
+        export VERSION_DIR="$CI_COMMIT_REF_NAME"
+      fi
+      echo "Updating version: $VERSION_DIR"
+
+    - rm -rf public/$VERSION_DIR
+    - mkdir -p public/$VERSION_DIR
+
+    - tar -xzf ../site.tgz -C public/$VERSION_DIR
+
+    - echo "$(date)" > public/$VERSION_DIR/.build-timestamp
+    - touch public/.nojekyll
+
+    - git add public/
+    - git commit -m "Update docs for $CI_COMMIT_REF_NAME" || echo "No changes to commit"
+    - git push origin pages
+  rules:
+
+    # Rule 1: Merge request to main or dev
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev")'
+      changes:
+        - docs/**/*
+      when: always
+
+    # Rule 2: Push to dev
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev")'
+      changes:
+        - docs/**/*
+      when: always
+
+    # # Rule 3: Push to any branch for testing
+    # - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH != "master" || $CI_COMMIT_BRANCH != "dev")'
+    #   changes:
+    #     - docs/**/*
+    #   when: always
+
+    - when: never
