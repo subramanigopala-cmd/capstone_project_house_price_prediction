@@ -7,4 +7,5 @@ API Documentation
    :maxdepth: 2
 
    api/ta_lib.rst
+   api/housing.rst
    

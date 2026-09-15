@@ -197,3 +197,6 @@ test.ipynb
 
 # ignore .envrc
 .envrc
+# Local project environments
+ta-lib-dev/
+ta-lib-tareg-dev/

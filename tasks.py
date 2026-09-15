@@ -11,7 +11,7 @@ from invoke import Collection, UnexpectedExit, task
 
 # Some default values
 PACKAGE_NAME = "ta_lib"
-ENV_PREFIX = "ta-lib-assignment4"
+ENV_PREFIX = "ta-lib"
 ENV_PREFIX_PYSPARK = "ta-lib-pyspark"
 NUM_RETRIES = 10
 SLEEP_TIME = 1
@@ -816,6 +816,12 @@ def run_unit_tests(c, platform=PLATFORM, env=DEV_ENV, markers=None):
             c.run(f"""pytest -v "{test_usecase}" {markers}""")
 
 
+@task(name="complexity")
+def run_complexity(c, platform=PLATFORM):
+        """Calculate code complexity using Radon from the base environment."""
+        c.run(f'python -m radon cc "{SOURCE_FOLDER}" -s -a')
+
+
 @task(name="vuln")
 def run_vulnerability_test(c, platform=PLATFORM, env=DEV_ENV):
     env_name = _get_env_name(env)
@@ -1023,6 +1029,7 @@ _create_task_collection(
     run_qc_test,
     run_vulnerability_test,
     run_unit_tests,
+    run_complexity,
     run_all_tests,
     validate_env,
 )
