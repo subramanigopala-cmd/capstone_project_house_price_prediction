@@ -1,7 +1,0 @@
-driver: mlflow
-backend_store:
-  uri: sqlite:///mlruns/mlflow.db
-model_registry:
-  uri: sqlite:///mlruns/mlflow.db
-artifact_store:
-  uri: ./mlruns

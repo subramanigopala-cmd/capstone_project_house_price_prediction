@@ -11,7 +11,7 @@ vars:
   ENV_PREFIX_PYSPARK: ta-lib-pyspark
   TEST_BASE_PATH: "tests"
   PACKAGE_LIST:
-    - core
+    - housing
     # - ebo
 
 tasks:
@@ -875,7 +875,7 @@ tasks:
             # main logic
             echo "Running quality control checks..."
             python -m black --check {{.PATH}}
-            python -m isort --check-only {{.PATH}}
+            python -m isort --check-only --skip-glob "src/ta_lib/_vendor/**" {{.PATH}}
             python -m flake8 {{.PATH}}
           fi
 
@@ -895,6 +895,36 @@ tasks:
   #         # - python -m unittest discover -s tests
   #         # echo "All tests finished."
   #       platforms: [linux, darwin]
+
+  test.complexity:
+    desc: Calculate code complexity using Radon
+    silent: true
+    vars:
+      PATH: '{{.path | default "src/ta_lib/"}}'
+      HELP_TEXT: |-
+
+        Usage:
+          task test.complexity
+
+        Description:
+          Calculates cyclomatic complexity for the Python source code using Radon.
+
+        Options:
+          path           Target path. Default: 'src/ta_lib/'
+
+        Example:
+          task test.complexity
+
+    cmds:
+      - cmd: |
+          if [ "{{.help}}" = "true" ]; then
+            echo "{{.HELP_TEXT}}"
+            exit 0
+          else
+            echo "Running Radon complexity analysis..."
+            python -m radon cc "{{.PATH}}" -s -a
+          fi
+        platforms: [linux, darwin, windows]
 
   test.unittest:
     desc: Run unit tests

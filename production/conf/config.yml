@@ -2,4 +2,3 @@ core: default
 logging: production
 data_catalog: local
 job_catalog: local
-model_tracker: local

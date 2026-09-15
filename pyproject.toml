@@ -208,7 +208,8 @@ addon_code_format = [
   "isort==6.0.1",
   "flake8-bandit==4.1.1",
   "black==25.1.0",
-  "Flake8-pyproject==1.2.3"
+  "Flake8-pyproject==1.2.3",
+"radon==6.0.1"
 ]
 
 addon_testing = [
@@ -250,6 +251,7 @@ where = ["src"]
 [tool.black]
 line-length = 88
 target-version = ["py38"]
+exclude = "src/ta_lib/(_vendor|mmx)/.*"
 
 [tool.isort]
 profile = "black"
